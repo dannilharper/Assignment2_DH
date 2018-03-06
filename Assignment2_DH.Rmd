@@ -1,0 +1,120 @@
+---
+title: "Assignment2_DH"
+author: "Danni Harper"
+date: "March 5, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+Making a function with 100 different numbers between -1 and 1, the response of the function is in the linear model form
+```{r}
+gen.mod <- function(n = 100, b0 = 2, b1 = 3, sd.err = 1) {
+    predictor <- runif(n) - 1
+    response <- b0 + b1 * predictor + rnorm(n, mean = 0, sd = sd.err)
+    return(data.frame(response = response, predictor = predictor))
+}
+```
+
+Creating a variety of different values for sample size (n), slope (b1) and standard error. Then putting these values into a data frame
+```{r}
+n.times <- 1:10
+n <- c(25, 75, 150)
+b1 <- c(0.5, 1, 3, 4.5)
+sd.err <- c(0.1, 0.5, 1, 3.5)
+
+values.df <- expand.grid(n.times = n.times, n = n, b1 = b1, sd.err = sd.err)
+```
+
+Using the data frame with the variable values, input these values into the function and then create a model (mod1) that will result in the estimation of t-values for further steps in the question.
+```{r}
+for (i in 1:length(values.df$n.times)) {
+    tmp.df <- gen.mod(n = values.df$n[i], b0 = 0, b1 = values.df$b1[i], sd.err = values.df$sd.err[i])
+    mod1 <- lm(response ~ predictor, data = tmp.df)
+    values.df$tvalue[i] <- summary(mod1)$coefficients["predictor", "t value"]
+}
+```
+
+Plot of t-values for different slopes
+```{r}
+ggplot(data = values.df, aes(tvalue, group = b1, col = b1))+
+  geom_density() + 
+  xlab("t-value") + 
+  ylab("Density")
+```
+
+Plot of t-values for different sample sizes
+```{r}
+ggplot(data = values.df, aes(tvalue, group = n, col = n))+ 
+  geom_density() + 
+  xlab("t-value") + 
+  ylab("Density")
+```
+
+Plot of t-values for different standard errors
+```{r}
+ggplot(data = values.df, aes(tvalue, group = sd.err, col = sd.err))+
+  geom_density() + 
+  xlab("t-value") + 
+  ylab("Density")
+```
+
+Using the same steps as above, created a function using a set b0 of zero (no effect) and a sample size (n) of 100. This time looking for estimation of p-value rather than t-value
+
+```{r}
+gen.mod2 <- function(n = 100, b0 = 0, b1 = 0, sd.err = 1) {
+    predictor <- runif(n) - 0.5
+    response <- b0 + b1 * predictor + rnorm(n, mean = 0, sd = sd.err)
+    return(data.frame(response = response, predictor = predictor))
+}
+
+```
+
+```{r}
+n.times <- 1:10
+n <- c(100)
+b1 <- c(0)
+sd.err <- c(0.1,1, 2.5, 4)
+
+values.df2 <- expand.grid(n.times = n.times, n = n, b1 = b1, sd.err = sd.err)
+```
+
+```{r}
+for (i in 1:length(values.df2$n.times)) {
+    tmp.df2 <- gen.mod2(n = values.df2$n[i], b0 = 0, b1 = values.df2$b1[i], sd.err = values.df2$sd.err[i])
+    mod2 <- lm(response ~ predictor, data = tmp.df2)
+    values.df2$pvalue[i] <- summary(mod2)$coefficients["predictor", "Pr(>|t|)"]
+}
+```
+
+
+Distribution of p-values for certain standard errors broken up by sample size
+```{r}
+ggplot(data = values.df2, aes(pvalue, group = sd.err, col = sd.err))+
+  geom_density() + 
+  xlab("p-value") + 
+  ylab("Density")
+```
+
+Find proportion of p-values equal to or less than 0.05. (THIS CAN'T BE RIGHT...)
+```{r}
+pvals <- subset(values.df2, pvalue <= 0.05)
+
+proportion <- (sum(pvals)/100)*100
+print(proportion)
+```
+
+Plot showing the different distributions of p-values for different standard errors.
+```{r}
+ggplot(data = values.df2, aes(pvalue, group = n, col = n))+
+  geom_density() + 
+  xlab("p-value") + 
+  ylab("Density") +
+  facet_grid(~sd.err)
+```
+
