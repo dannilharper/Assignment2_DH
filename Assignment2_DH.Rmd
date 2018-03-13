@@ -34,10 +34,14 @@ values.df <- expand.grid(n.times = n.times, n = n, b1 = b1, sd.err = sd.err)
 Using the data frame with the variable values, input these values into the function and then create a model (mod1) that will result in the estimation of t-values for further steps in the question.
 ```{r}
 for (i in 1:length(values.df$n.times)) {
-    tmp.df <- gen.mod(n = values.df$n[i], b0 = 0, b1 = values.df$b1[i], sd.err = values.df$sd.err[i])
+    tmp.df <- gen.mod(n = values.df$n[i], b0 = 2, b1 = values.df$b1[i], sd.err = values.df$sd.err[i])
     mod1 <- lm(response ~ predictor, data = tmp.df)
     values.df$tvalue[i] <- summary(mod1)$coefficients["predictor", "t value"]
 }
+
+values.df$n <- factor(values.df$n)
+values.df$b1 <- factor(values.df$b1)
+values.df$sd.err <- factor(values.df$sd.err)
 ```
 
 Plot of t-values for different slopes
@@ -76,7 +80,7 @@ gen.mod2 <- function(n = 100, b0 = 0, b1 = 0, sd.err = 1) {
 ```
 
 ```{r}
-n.times <- 1:10
+n.times <- 1:2000
 n <- c(100)
 b1 <- c(0)
 sd.err <- c(0.1,1, 2.5, 4)
@@ -90,6 +94,10 @@ for (i in 1:length(values.df2$n.times)) {
     mod2 <- lm(response ~ predictor, data = tmp.df2)
     values.df2$pvalue[i] <- summary(mod2)$coefficients["predictor", "Pr(>|t|)"]
 }
+
+values.df2$n <- factor(values.df2$n)
+values.df2$b1 <- factor(values.df2$b1)
+values.df2$sd.err <- factor(values.df2$sd.err)
 ```
 
 
@@ -103,10 +111,9 @@ ggplot(data = values.df2, aes(pvalue, group = sd.err, col = sd.err))+
 
 Find proportion of p-values equal to or less than 0.05. (THIS CAN'T BE RIGHT...)
 ```{r}
-pvals <- subset(values.df2, pvalue <= 0.05)
+test.sub <- subset(values.df2, sd.err == 5)
 
-proportion <- (sum(pvals)/100)*100
-print(proportion)
+with(test.sub, table(pvalue <= 0.05))/length(test.sub$pvalue)
 ```
 
 Plot showing the different distributions of p-values for different standard errors.
